@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KTAF NJSLA Explorer</title>
+<meta name="description" content="New Jersey NJSLA and NJGPA results, spring 2022 to 2026, for every district, charter and school, with KIPP Newark, Camden and Paterson highlighted.">
+<style>
+html, body { margin: 0; background: #f4f6f9; }
+.dash-skeleton { min-height: 1em; border-radius: 8px; background: linear-gradient(90deg, rgba(0,30,98,.05) 25%, rgba(0,30,98,.11) 50%, rgba(0,30,98,.05) 75%); background-size: 200% 100%; animation: kx-sk 1.4s ease-in-out infinite; }
+@keyframes kx-sk { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .dash-skeleton { animation: none; } }
+</style>
+<style>
+/* Layout: indigo header band, view tabs and filters, then one view at a time: region cards or tiles, then cards in a two-column grid.
+   Light theme always, on the KIPP NJ | Miami palette. KIPP is Strong Indigo, district schools orange, other charters blue, the state a dashed slate line.
+   Region accents follow the brand: Newark blue, Camden green, Paterson red. */
+.kx {
+  --kx-bg: #f4f6f9;
+  --kx-card: #ffffff;
+  --kx-fg: #2a3340;
+  --kx-strong: #001E62;
+  --kx-muted: #5a6675;
+  --kx-subtle: #8d99ab;
+  --kx-border: #d6dde7;
+  --kx-line: #e9edf3;
+  --kx-soft: #eef3fc;
+  --kx-indigo: #001E62;
+  --kx-indigo-600: #1a44a0;
+  --kx-orange: #F9A21A;
+  --kx-blue: #57C0E9;
+  --kx-green: #C3D52E;
+  --kx-red: #EE3C37;
+  --c-k: #001E62;
+  --c-d: #d98300;
+  --c-c: #1f7fb0;
+  --c-s: #5a6675;
+  --c-sch: #b6c0cf;
+  --c-prior: #8d99ab;
+  --kx-up-fg: #4f5c06;
+  --kx-up-bg: #eef4c4;
+  --kx-down-fg: #b81f1b;
+  --kx-down-bg: #fde6e4;
+  --kx-flat-bg: #e9edf3;
+  --kx-warn-bg: #fff6e8;
+  --kx-warn-fg: #7a4700;
+  --kx-ring: rgba(87, 192, 233, .55);
+  --kx-radius: 10px;
+  --kx-radius-sm: 6px;
+  --kx-shadow: 0 1px 2px rgba(0, 30, 98, .06);
+  --kx-shadow-md: 0 10px 24px -8px rgba(0, 30, 98, .22), 0 2px 6px -2px rgba(0, 30, 98, .1);
+  --kx-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --color-fg: var(--kx-fg);
+  --color-fg-muted: var(--kx-muted);
+  --color-bg: var(--kx-bg);
+  --color-panel: var(--kx-card);
+  --color-border-line: var(--kx-border);
+  color-scheme: light;
+  container: kx / inline-size;
+  background: var(--kx-bg);
+  color: var(--kx-fg);
+  font-family: var(--kx-font);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: clamp(16px, 3vw, 32px);
+}
+.kx *, .kx *::before, .kx *::after { box-sizing: border-box; }
+.kx [hidden] { display: none !important; }
+.kx-wrap { max-width: 1440px; margin-inline: auto; display: grid; gap: 20px; }
+.kx b { font-weight: 600; }
+
+/* header band */
+.kx-hero { position: relative; overflow: hidden; padding: 26px 28px 22px; border-radius: var(--kx-radius); background: var(--kx-indigo); color: #fff; }
+.kx-hero::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; background: linear-gradient(to right, var(--kx-blue) 0 25%, var(--kx-green) 25% 50%, var(--kx-red) 50% 75%, var(--kx-orange) 75% 100%); }
+.kx-eyebrow { margin: 0 0 8px; font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--kx-orange); }
+.kx h1 { margin: 0; font-weight: 700; font-size: clamp(24px, 3vw, 34px); line-height: 1.15; letter-spacing: -.005em; color: #fff; text-wrap: balance; }
+.kx-take { margin: 14px 0 6px; color: #dde6fa; }
+.kx-take > summary { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 4px 0; cursor: pointer; list-style: none; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #fff; }
+.kx-take > summary::-webkit-details-marker { display: none; }
+.kx-take > summary::before { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--kx-orange); border-bottom: 2px solid var(--kx-orange); transform: rotate(-45deg); transition: transform .15s; }
+.kx-take[open] > summary::before { transform: rotate(45deg); }
+.kx-take > summary:focus-visible { outline: 2px solid var(--kx-blue); outline-offset: 3px; border-radius: 4px; }
+.kx-take-ctx { font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 13px; color: #b9caf0; }
+.kx-takeaways { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; min-height: 60px; }
+.kx-takeaways li { position: relative; padding-left: 20px; max-width: 110ch; font-size: 14.5px; line-height: 1.55; color: #dde6fa; }
+.kx-takeaways li::before { content: ""; position: absolute; left: 2px; top: .55em; width: 8px; height: 8px; border-radius: 2px; background: var(--kx-blue); }
+.kx-takeaways li.is-bright::before { background: var(--kx-green); }
+.kx-takeaways li.is-caveat { color: #b9caf0; font-size: 13px; }
+.kx-takeaways li.is-caveat::before { background: #7fa0e0; }
+.kx .kx-takeaways b { color: #fff; }
+.kx-take-key { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 12px 0 0; font-size: 12px; color: #b9caf0; }
+.kx-take-key i { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 2px; background: var(--kx-blue); }
+.kx-take-key i.k-bright { background: var(--kx-green); }
+.kx-take-key i.k-caveat { background: #7fa0e0; }
+
+/* view tabs */
+.kx-views { display: flex; flex-wrap: wrap; gap: 8px; }
+.kx-views button { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 11rem; padding: 10px 16px; font: inherit; text-align: left; color: var(--kx-fg); background: var(--kx-card); border: 1px solid var(--kx-border); border-radius: var(--kx-radius); box-shadow: var(--kx-shadow); cursor: pointer; }
+.kx-views button b { font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--kx-strong); }
+.kx-views button span { font-size: 12px; color: var(--kx-muted); }
+.kx-views button:hover { border-color: #b6c0cf; }
+.kx-views button[aria-pressed="true"] { border-color: var(--kx-indigo); background: var(--kx-indigo); }
+.kx-views button[aria-pressed="true"] b { color: #fff; }
+.kx-views button[aria-pressed="true"] span { color: #b9caf0; }
+.kx-views button:focus-visible, .kx-tabs button:focus-visible, .kx-btn:focus-visible, .kx-sort:focus-visible, .kx-control:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--kx-ring); }
+
+/* filter bar */
+.kx-toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; padding: 14px 16px; background: var(--kx-card); border: 1px solid var(--kx-border); border-radius: var(--kx-radius); box-shadow: var(--kx-shadow); }
+.kx-field { display: grid; gap: 6px; min-width: 0; }
+.kx-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--kx-muted); }
+.kx-control { height: 34px; font: inherit; font-size: 14px; color: var(--kx-fg); background-color: var(--kx-card); border: 1px solid var(--kx-border); border-radius: var(--kx-radius-sm); padding: 0 10px; outline: none; }
+.kx-select { appearance: none; -webkit-appearance: none; max-width: 100%; padding-right: 30px; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6675' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 9px center; background-size: 14px 14px; }
+.kx-tabs { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: var(--kx-line); border-radius: var(--kx-radius-sm); }
+.kx-tabs button { height: 28px; font: inherit; font-size: 13px; font-weight: 400; color: var(--kx-muted); background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 0 11px; cursor: pointer; white-space: nowrap; }
+.kx-tabs button:hover { color: var(--kx-fg); }
+.kx-tabs button[aria-pressed="true"] { background: var(--kx-card); color: var(--kx-strong); border-color: var(--kx-border); font-weight: 600; }
+.kx-tabs button:disabled { opacity: .4; cursor: default; }
+.kx-gradebar { display: flex; flex-wrap: wrap; gap: 6px; }
+.kx-grade-toggles button { min-width: 32px; padding: 0 8px; }
+.kx-btn { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 11px; font: inherit; font-size: 13px; color: var(--kx-fg); background: var(--kx-card); border: 1px solid var(--kx-border); border-radius: var(--kx-radius-sm); cursor: pointer; }
+.kx-btn:hover { background: var(--kx-bg); }
+.kx-switch { position: relative; flex: none; width: 28px; height: 16px; border-radius: 999px; background: #b6c0cf; }
+.kx-switch::after { content: ""; position: absolute; left: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: transform .15s; }
+.kx-btn[aria-pressed="true"] .kx-switch { background: var(--kx-indigo); }
+.kx-btn[aria-pressed="true"] .kx-switch::after { transform: translateX(12px); }
+.kx-xbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 12px 0; }
+.kx-search { width: 15rem; max-width: 100%; height: 30px; font-size: 13px; }
+
+/* caveats */
+.kx-caveat { display: flex; gap: 10px; align-items: flex-start; margin: 0; padding: 9px 14px; font-size: 13px; color: var(--kx-warn-fg); background: var(--kx-warn-bg); border-radius: var(--kx-radius-sm); }
+.kx-caveat::before { content: ""; flex: none; width: 4px; align-self: stretch; border-radius: 2px; background: var(--kx-orange); }
+
+/* views */
+.kx-view { display: grid; gap: 20px; }
+.kx-sec-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 16px; }
+.kx-sec-title { margin: 0; font-size: 17px; font-weight: 700; color: var(--kx-strong); }
+.kx-sec-note { margin: 0; font-size: 12px; color: var(--kx-muted); }
+.kx-entity { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px 24px; }
+.kx-entity h2 { margin: 0; font-weight: 700; font-size: clamp(20px, 2.4vw, 26px); line-height: 1.2; color: var(--kx-strong); }
+.kx-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; min-height: 22px; }
+.kx-badge { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; font-size: 12px; color: var(--kx-fg); background: var(--kx-card); border: 1px solid var(--kx-border); border-radius: var(--kx-radius-sm); white-space: nowrap; }
+.kx-badge.is-key { background: var(--kx-indigo); border-color: var(--kx-indigo); color: #fff; font-weight: 600; }
+
+/* region cards and tiles */
+.kx-rcards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: 14px; }
+.kx-rcard, .kx-tile { position: relative; display: flex; flex-direction: column; gap: 2px; min-width: 0; padding: 16px 18px; background: var(--kx-card); border: 1px solid var(--kx-border); border-radius: var(--kx-radius); box-shadow: var(--kx-shadow); }
+.kx-rcard { padding-top: 20px; cursor: pointer; overflow: hidden; }
+.kx-rcard::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 6px; background: var(--r, var(--kx-indigo)); }
+.kx-rcard:hover { border-color: #b6c0cf; box-shadow: var(--kx-shadow-md); }
+.kx-rcard:focus-visible, .kx-tile:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--kx-ring); }
+.kx [data-region="newark"] { --r: var(--kx-blue); }
+.kx [data-region="camden"] { --r: var(--kx-green); }
+.kx [data-region="paterson"] { --r: var(--kx-red); }
+.kx-rtag { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--kx-muted); }
+.kx-rcard h3 { margin: 2px 0 0; font-size: 18px; font-weight: 700; color: var(--kx-strong); }
+.kx-rsub { margin: 0; font-size: 12px; color: var(--kx-muted); }
+.kx-tile h4 { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--kx-muted); }
+.kx-tile h4 i { flex: none; width: 10px; height: 10px; border-radius: 3px; }
+.kx-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr)); gap: 12px; }
+.kx-big { margin: 8px 0 0; min-height: 1.15em; font-weight: 700; font-size: 36px; line-height: 1.1; color: var(--kx-strong); font-variant-numeric: tabular-nums; }
+.kx-unit { margin-left: 2px; font-size: .5em; font-weight: 600; color: var(--kx-muted); }
+.kx-none { font-size: 14px; font-weight: 400; color: var(--kx-muted); }
+.kx-flag { display: inline-flex; align-items: center; height: 18px; margin-left: 8px; padding: 0 6px; vertical-align: middle; font-size: 11px; font-weight: 600; border-radius: 4px; color: var(--kx-warn-fg); background: var(--kx-warn-bg); }
+.kx-tile-n { margin: 0 0 10px; min-height: 18px; font-size: 12px; color: var(--kx-muted); }
+.kx-vs { margin: 0; padding-top: 10px; border-top: 1px solid var(--kx-line); display: grid; gap: 6px; font-size: 12.5px; }
+.kx-vs > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kx-vs dt { min-width: 0; color: var(--kx-muted); }
+.kx-vs dd { margin: 0; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.kx-vs dd small { font-size: 12px; color: var(--kx-muted); }
+.kx-delta { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 4px; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; background: var(--kx-flat-bg); color: var(--kx-fg); }
+.kx-delta.up { background: var(--kx-up-bg); color: var(--kx-up-fg); }
+.kx-delta.down { background: var(--kx-down-bg); color: var(--kx-down-fg); }
+.kx-spark { margin-top: 12px; min-height: 96px; }
+.sw-K { background: var(--c-k); } .sw-D { background: var(--c-d); } .sw-C { background: var(--c-c); } .sw-S { background: var(--c-s); } .sw-SCH { background: var(--c-sch); }
+
+/* cards */
+.kx-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); }
+@container kx (min-width: 1060px) { .kx-grid.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .kx-span { grid-column: 1 / -1; } }
+.kx-card { min-width: 0; display: flex; flex-direction: column; padding: 20px; background: var(--kx-card); border: 1px solid var(--kx-border); border-radius: var(--kx-radius); box-shadow: var(--kx-shadow); }
+.kx-card h3 { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.35; color: var(--kx-strong); }
+.kx-card-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px 16px; }
+.kx-note { margin: 4px 0 12px; max-width: 92ch; font-size: 12.5px; color: var(--kx-muted); }
+.kx-foot { margin: 10px 0 0; font-size: 12px; color: var(--kx-muted); }
+.kx-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0 0 12px; padding: 0; list-style: none; font-size: 12px; color: var(--kx-muted); }
+.kx-legend li { display: inline-flex; align-items: center; gap: 6px; }
+.kx-sw { flex: none; width: 10px; height: 10px; border-radius: 3px; }
+.kx-sw-line { width: 16px; height: 3px; border-radius: 2px; }
+.kx-sw-dash { width: 16px; height: 0; border-top: 2px dashed var(--c-s); background: none; }
+.kx-sw-tick { width: 3px; height: 13px; border-radius: 1px; }
+.kx-sw-ring { width: 9px; height: 9px; border-radius: 50%; border: 2px solid var(--c-k); background: #fff; }
+.kx-minis { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr)); }
+.kx-mini { min-width: 0; padding: 12px 12px 6px; border: 1px solid var(--kx-line); border-radius: var(--kx-radius-sm); border-top: 4px solid var(--r, var(--kx-border)); }
+.kx-mini h4 { margin: 0 0 6px; font-size: 13px; font-weight: 700; color: var(--kx-strong); }
+.kx-mini h4 span { font-weight: 400; color: var(--kx-muted); }
+
+/* charts */
+.kx-chart { position: relative; min-height: 200px; }
+.kx-chart.is-tall { min-height: 320px; }
+.kx-svg { display: block; overflow: visible; }
+.kx-svg text { font-family: var(--kx-font); }
+.kx-tick-t { font-size: 12px; fill: var(--kx-muted); font-variant-numeric: tabular-nums; }
+.kx-end { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.kx-grid-line { stroke: var(--kx-line); }
+.kx-axis-line { stroke: #b6c0cf; }
+.kx-zero { stroke: var(--c-s); stroke-dasharray: 4 3; }
+.kx-line { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.kx-dot { stroke: #fff; stroke-width: 1.5; }
+.kx-newtest { stroke: var(--kx-orange); stroke-width: 2; stroke-dasharray: 2 3; }
+.kx-newtest-t { font-size: 11px; font-weight: 600; fill: var(--kx-warn-fg); }
+.kx-hover { stroke: #b6c0cf; }
+.kx-pt { fill: #b6c0cf; fill-opacity: .55; }
+.kx-pt-lab { font-size: 12px; font-weight: 600; fill: var(--kx-strong); paint-order: stroke; stroke: #fff; stroke-width: 3px; }
+.kx-fit { stroke: var(--c-s); stroke-dasharray: 5 4; fill: none; }
+.kx-axis-title { font-size: 12px; fill: var(--kx-muted); }
+
+/* bar-and-tick rows */
+.kx-rl { --rl-cols: minmax(0, 15rem) minmax(5rem, 1fr) 4.8rem 4.6rem 4.8rem 5.4rem; position: relative; font-variant-numeric: tabular-nums; min-height: 120px; }
+.kx-rl.is-wide { --rl-cols: 2.4rem minmax(0, 17rem) minmax(5rem, 1fr) 4.8rem 4.6rem 4.8rem 5.4rem; }
+.kx-rl.is-mini { --rl-cols: minmax(0, 1fr) 3.6rem 4.9rem; }
+.kx-rl.is-mini .kx-rl-head, .kx-rl.is-mini .kx-rl-row { grid-template-rows: auto 18px; row-gap: 0; }
+.kx-rl.is-mini .kx-rl-axis, .kx-rl.is-mini .kx-rl-track { grid-column: 1 / -1; grid-row: 2; min-height: 18px; }
+.kx-rl.is-mini .kx-rl-row { padding-bottom: 7px; }
+.kx-rl.is-mini .kx-rl-name { display: flex; align-items: baseline; gap: 8px; padding: 6px 0 2px; }
+.kx-rl.is-mini .kx-rl-name .nm { flex: 0 1 auto; }
+.kx-rl.is-mini .kx-rl-name .sub { flex: 1 1 0; min-width: 0; }
+.kx-rl.is-mini .kx-rl-track .bar { height: 10px; margin-top: -5px; }
+.kx-rl.is-mini .kx-rl-track .tick { height: 16px; margin-top: -8px; }
+.kx-rl-head, .kx-rl-row { display: grid; grid-template-columns: var(--rl-cols); column-gap: 12px; align-items: center; }
+.kx-rl-head { position: sticky; top: 0; z-index: 2; padding: 0 8px 6px; font-size: 12px; color: var(--kx-muted); background: var(--kx-card); border-bottom: 1px solid var(--kx-border); }
+.kx-rl-axis { position: relative; height: 16px; }
+.kx-rl-axis span { position: absolute; top: 0; transform: translateX(-50%); }
+.kx-rl-axis span:first-child { transform: none; }
+.kx-rl-axis span:last-child { transform: translateX(-100%); }
+.kx-rl .c { text-align: right; white-space: nowrap; }
+.kx-sort { justify-self: start; padding: 0; font: inherit; font-size: 12px; color: var(--kx-muted); background: none; border: 0; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+.kx-sort.c { justify-self: end; }
+.kx-sort:hover, .kx-sort[aria-pressed="true"] { color: var(--kx-strong); }
+.kx-sort[aria-pressed="true"] { font-weight: 700; }
+.kx-sort.is-asc::after { content: " ↑"; }
+.kx-sort.is-desc::after { content: " ↓"; }
+.kx-rl-row { min-height: 40px; padding: 0 8px; border-bottom: 1px solid var(--kx-line); }
+.kx-rl-row.is-avg { background: #fafbfc; }
+.kx-rl-row.is-avg .nm { font-weight: 600; }
+.kx-rl-row.is-last-avg { border-bottom: 2px solid var(--kx-border); }
+.kx-rl-row.is-kipp { background: var(--kx-soft); box-shadow: inset 4px 0 0 var(--r, var(--kx-indigo)); }
+.kx-rl-row.is-kipp .nm { font-weight: 700; color: var(--kx-strong); }
+.kx-rl-row.is-host { box-shadow: inset 4px 0 0 var(--c-d); }
+.kx-rl-row.is-dim { opacity: .55; }
+.kx-rl-row.is-link { cursor: pointer; }
+.kx-rl-row.is-link:hover { background: var(--kx-soft); }
+.kx-rl-row:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--kx-indigo-600); }
+.kx-rl-name { min-width: 0; display: grid; padding: 4px 0; }
+.kx-rl-name .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.kx-rl-name .sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--kx-muted); }
+.kx-rl-track { position: relative; align-self: stretch; min-height: 34px; background: linear-gradient(to right, var(--kx-line) 1px, transparent 1px) 0 0 / 25% 100% repeat-x; }
+.kx-rl-track .bar { position: absolute; left: 0; top: 50%; height: 14px; margin-top: -7px; border-radius: 0 3px 3px 0; }
+.kx-rl-track .tick { position: absolute; top: 50%; width: 3px; height: 22px; margin: -11px 0 0 -1.5px; border-radius: 1px; background: var(--c-d); }
+.kx-rl-track .tick.py { background: var(--c-prior); }
+.kx-rl-track .tick.c { background: var(--c-c); }
+.kx-rl-track .ref { position: absolute; top: 0; bottom: -1px; width: 0; border-left: 2px dashed var(--c-s); opacity: .75; }
+.kx-rl-row .c { font-size: 13px; }
+.kx-rl-row .c1 { font-weight: 600; }
+.kx-rl-row .c.muted, .kx-muted { color: var(--kx-muted); font-weight: 400; }
+.kx-rank { font-size: 12px; color: var(--kx-muted); }
+.kx-up { color: var(--kx-up-fg); }
+.kx-down { color: var(--kx-down-fg); }
+.kx-scroll { max-height: 44rem; overflow: auto; }
+.kx-more { display: flex; align-items: center; gap: 12px; margin-top: 12px; font-size: 12.5px; color: var(--kx-muted); }
+@container kx (max-width: 700px) {
+  .kx-rl:not(.is-mini), .kx-rl.is-wide { --rl-cols: minmax(0, 8.5rem) minmax(3.5rem, 1fr) 4.4rem 4.8rem; }
+  .kx-rl .hide-narrow { display: none; }
+}
+
+/* heat map */
+.kx-heat-scroll { position: relative; max-height: 44rem; min-height: 120px; overflow: auto; font-variant-numeric: tabular-nums; }
+.kx-heat-grid { min-width: 30rem; }
+.kx-heat-row { display: grid; grid-template-columns: minmax(8rem, 17rem) repeat(var(--hcols, 5), minmax(3.2rem, 1fr)) 5.4rem; column-gap: 3px; padding: 1.5px 8px 1.5px 0; }
+.kx-heat-row.is-head { position: sticky; top: 0; z-index: 2; align-items: end; padding-bottom: 6px; margin-bottom: 3px; font-size: 12px; color: var(--kx-muted); background: var(--kx-card); border-bottom: 1px solid var(--kx-border); }
+.kx-heat-row.is-head span { text-align: center; }
+.kx-heat-row.is-head span:first-child { text-align: left; }
+.kx-heat-row.is-head span:last-child { text-align: right; }
+.kx-heat-row.is-head .is-new { box-shadow: inset 0 -2px 0 var(--kx-orange); }
+.kx-heat-row.is-avg .nm { font-weight: 600; }
+.kx-heat-row.is-last-avg { border-bottom: 2px solid var(--kx-border); padding-bottom: 4px; margin-bottom: 3px; }
+.kx-heat-row.is-kipp .kx-heat-name { box-shadow: inset 4px 0 0 var(--r, var(--kx-indigo)); padding-left: 10px; }
+.kx-heat-row.is-kipp .nm { font-weight: 700; color: var(--kx-strong); }
+.kx-heat-name { min-width: 0; display: grid; align-content: center; padding: 2px 8px 2px 0; }
+.kx-heat-name .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.kx-heat-name .sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; color: var(--kx-muted); }
+.kx-heat-cell { display: flex; align-items: center; justify-content: center; min-height: 32px; border-radius: 3px; font-size: 12.5px; color: var(--kx-fg); background: #eef1f5; }
+.kx-heat-cell.is-dark { color: #fff; }
+.kx-heat-cell.is-na, .kx-heat-na { background: repeating-linear-gradient(135deg, #f4f6f9 0 4px, #e9edf3 4px 8px); color: var(--kx-muted); }
+.kx-heat-chg { display: flex; align-items: center; justify-content: flex-end; font-size: 13px; font-weight: 600; }
+.kx-heat-key { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 10px; font-size: 12px; color: var(--kx-muted); }
+.kx-heat-ramp { width: 150px; height: 10px; border-radius: 3px; border: 1px solid var(--kx-border); background: linear-gradient(to right, #d98300, #ffffff 50%, #001E62); }
+.kx-heat-na { display: inline-block; width: 18px; height: 12px; border-radius: 2px; }
+
+/* stacked level bars */
+.kx-lv { position: relative; display: grid; gap: 8px; min-height: 120px; font-variant-numeric: tabular-nums; }
+.kx-lv-row { display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr) 4rem; column-gap: 12px; align-items: center; }
+.kx-lv-row.is-gap { margin-top: 8px; }
+.kx-lv-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.kx-lv-name.is-kipp { font-weight: 700; color: var(--kx-strong); }
+.kx-lv-bar { display: flex; height: 26px; border-radius: 4px; overflow: hidden; background: var(--kx-line); }
+.kx-lv-seg { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.kx-lv-tot { text-align: right; font-size: 13px; font-weight: 600; }
+.lv1 { background: #d98300; color: #fff; } .lv2 { background: #fcd99b; color: #5c3600; } .lv3 { background: #d6dde7; color: #2a3340; } .lv4 { background: #7fa0e0; color: #00123c; } .lv5 { background: #001E62; color: #fff; }
+@container kx (max-width: 700px) { .kx-lv-row { grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr) 3.4rem; } }
+
+/* standing table */
+.kx-table-wrap { overflow-x: auto; }
+.kx-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.kx-table th { padding: 6px 8px; font-size: 12px; font-weight: 400; color: var(--kx-muted); text-align: right; border-bottom: 1px solid var(--kx-border); white-space: nowrap; }
+.kx-table th:first-child, .kx-table td:first-child { text-align: left; }
+.kx-table td { padding: 7px 8px; text-align: right; border-bottom: 1px solid var(--kx-line); white-space: nowrap; }
+.kx-table tr.is-kipp td:first-child { font-weight: 700; color: var(--kx-strong); box-shadow: inset 4px 0 0 var(--r, var(--kx-indigo)); padding-left: 12px; }
+.kx-table td small { color: var(--kx-muted); }
+
+/* tooltip */
+.kx-tip { position: absolute; z-index: 30; pointer-events: none; white-space: nowrap; font-size: 12px; color: var(--kx-fg); background: var(--kx-card); border: 1px solid var(--kx-border); border-radius: var(--kx-radius-sm); box-shadow: var(--kx-shadow-md); padding: 8px 10px; }
+.kx-tip-head { margin-bottom: 4px; font-weight: 700; color: var(--kx-strong); }
+.kx-tip-row { display: flex; align-items: center; gap: 6px; line-height: 1.6; color: var(--kx-muted); }
+.kx-tip-sw { flex: none; width: 8px; height: 8px; border-radius: 2px; }
+.kx-tip-val { margin-left: auto; padding-left: 16px; font-weight: 600; color: var(--kx-fg); font-variant-numeric: tabular-nums; }
+
+/* states */
+.kx-fail, .kx-empty { margin: 0; padding: 16px 0; color: var(--kx-muted); font-size: 12.5px; }
+.kx [data-dash-source-state=refreshing] { opacity: .5; }
+.kx [data-dash-source-state=empty] { color: transparent; }
+
+.kx-about { padding: 14px 20px; background: var(--kx-card); border: 1px solid var(--kx-border); border-radius: var(--kx-radius); }
+.kx-about > summary { cursor: pointer; font-size: 15px; font-weight: 700; color: var(--kx-strong); }
+.kx-about ul { margin: 10px 0 0; padding-left: 1.1em; display: grid; gap: 6px; max-width: 105ch; font-size: 13px; color: var(--kx-muted); }
+.kx .kx-about li b { color: var(--kx-fg); }
+.kx-about a { color: var(--kx-indigo-600); }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="runtime.js"></script>
+</head>
+<body>
+<div class="kx" id="njsla">
+<div class="kx-wrap">
+  <header class="kx-hero" id="top">
+    <p class="kx-eyebrow">KIPP Team &amp; Family · New Jersey state tests, spring 2022–2026</p>
+    <h1>NJSLA Explorer</h1>
+    <details class="kx-take" open>
+      <summary>What the numbers say <span class="kx-take-ctx"><span data-draw="subject-label">—</span> · <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></span></summary>
+      <ul class="kx-takeaways" data-draw="takeaways" data-source="regions entities"></ul>
+      <p class="kx-take-key">Written from the figures below for the subject, grades, year and student group you pick.
+        <span><i class="k-bright"></i>KIPP ahead</span><span><i></i>Fact</span><span><i class="k-caveat"></i>Read with care</span></p>
+    </details>
+  </header>
+
+  <nav class="kx-views" id="views" aria-label="Views">
+    <button type="button" data-view="regions" aria-pressed="true"><b>Our regions</b><span>Newark, Camden and Paterson side by side</span></button>
+    <button type="button" data-view="profile" aria-pressed="false"><b>Region profile</b><span>One city: every charter and district school</span></button>
+    <button type="button" data-view="statewide" aria-pressed="false"><b>Statewide</b><span>Every district, charter and school in NJ</span></button>
+  </nav>
+
+  <section class="kx-toolbar" id="filters" aria-label="Filters">
+    <div class="kx-field" data-only-view="profile" hidden>
+      <span class="kx-label" id="kx-region-label">Region</span>
+      <div class="kx-tabs" role="group" aria-labelledby="kx-region-label">
+        <button type="button" data-region-pick="newark" aria-pressed="true">Newark</button>
+        <button type="button" data-region-pick="camden" aria-pressed="false">Camden</button>
+        <button type="button" data-region-pick="paterson" aria-pressed="false">Paterson</button>
+      </div>
+    </div>
+    <div class="kx-field">
+      <span class="kx-label" id="kx-subject-label">NJSLA</span>
+      <div class="kx-tabs" role="group" aria-labelledby="kx-subject-label">
+        <button type="button" data-subject="EM" aria-pressed="false" title="ELA and Math combined">Overall</button>
+        <button type="button" data-subject="ELA" aria-pressed="true">ELA</button>
+        <button type="button" data-subject="MATH" aria-pressed="false">Math</button>
+        <button type="button" data-subject="SCI" aria-pressed="false">Science</button>
+      </div>
+    </div>
+    <div class="kx-field">
+      <span class="kx-label" id="kx-gp-label">NJGPA (grade 11)</span>
+      <div class="kx-tabs" role="group" aria-labelledby="kx-gp-label">
+        <button type="button" data-subject="ELAGP" aria-pressed="false">ELA</button>
+        <button type="button" data-subject="MATGP" aria-pressed="false">Math</button>
+      </div>
+    </div>
+    <div class="kx-field" data-grades>
+      <span class="kx-label" id="kx-grade-label">Grades</span>
+      <div class="kx-gradebar">
+        <div class="kx-tabs" role="group" aria-label="Grade ranges">
+          <button type="button" data-gset="" aria-pressed="true">All</button>
+          <button type="button" data-gset="3 4 5" aria-pressed="false">3–5</button>
+          <button type="button" data-gset="6 7 8" aria-pressed="false">6–8</button>
+        </div>
+        <div class="kx-tabs kx-grade-toggles" role="group" aria-labelledby="kx-grade-label">
+          <button type="button" data-grade="3" aria-pressed="false">3</button>
+          <button type="button" data-grade="4" aria-pressed="false">4</button>
+          <button type="button" data-grade="5" aria-pressed="false">5</button>
+          <button type="button" data-grade="6" aria-pressed="false">6</button>
+          <button type="button" data-grade="7" aria-pressed="false">7</button>
+          <button type="button" data-grade="8" aria-pressed="false">8</button>
+          <button type="button" data-grade="HS" aria-pressed="false" title="Grade 9 ELA, Algebra I, grade 11 Science">HS</button>
+        </div>
+      </div>
+    </div>
+    <div class="kx-field">
+      <label class="kx-label" for="kx-year">Year</label>
+      <select id="kx-year" class="kx-control kx-select">
+        <option value="2026">Spring 2026</option>
+        <option value="2025">Spring 2025</option>
+        <option value="2024">Spring 2024</option>
+        <option value="2023">Spring 2023</option>
+        <option value="2022">Spring 2022</option>
+      </select>
+    </div>
+    <div class="kx-field">
+      <label class="kx-label" for="kx-group">Student group</label>
+      <select id="kx-group" class="kx-control kx-select">
+        <option value="ALL">All students</option>
+        <option value="BL">Black &amp; Latino</option>
+        <option value="AA">African American</option>
+        <option value="HI">Hispanic</option>
+        <option value="WH">White</option>
+        <option value="AS">Asian</option>
+        <option value="MR">Two or more races / other</option>
+        <option value="ED">Economically disadvantaged</option>
+        <option value="NED">Not economically disadvantaged</option>
+        <option value="ML">Multilingual learners</option>
+        <option value="CML">Current multilingual learners</option>
+        <option value="FML">Former multilingual learners</option>
+        <option value="SWD">Students with disabilities</option>
+        <option value="SEA">Special education accommodation</option>
+        <option value="IEPN">No IEP (2026 only)</option>
+        <option value="S504">Section 504 (2026 only)</option>
+        <option value="F">Female</option>
+        <option value="M">Male</option>
+      </select>
+    </div>
+  </section>
+
+  <p class="kx-caveat" id="cv-newtest" hidden>2025–26 ELA, Math and NJGPA results come from the new adaptive tests (NJSLA-A and NJGPA-A). A change from 2025 to 2026 mixes real change with the change of test, so lean on the gap to the state or the district, which is measured on the same test each year.</p>
+  <p class="kx-caveat" id="cv-alg" hidden>Grade 7 and 8 Math leaves out students who took Algebra I instead, and schools place different shares of students in Algebra I. Add HS to count them.</p>
+  <p class="kx-caveat" id="cv-nograde" hidden>None of the grades picked are tested in this subject. Science is tested in grades 5, 8 and 11, and NJGPA in grade 11.</p>
+  <p class="kx-caveat" id="cv-em" hidden>Overall adds every ELA and Math score together (ELA grades 3–9, Math grades 3–8 and Algebra I), so a student who took both counts once in each, and counts are scores, not students.</p>
+  <p class="kx-caveat" id="cv-gp22" hidden>The NJGPA passing score was lowered after 2021–22 (from 750 to 725), so 2022 rates are not comparable with later years.</p>
+  <p class="kx-caveat" id="cv-paterson26" hidden>The state's 2025–26 files list every KIPP Paterson student's race as "declined to report", so its 2026 results by race are missing here.</p>
+  <p class="kx-caveat" id="cv-ed26" hidden>Economic disadvantage looks misreported for some LEAs in the state's 2025–26 files. Camden City district schools show 0.5% of tested students as disadvantaged (85% in 2025) and KIPP Paterson shows none, so their 2026 results for this group are missing or cover the wrong students.</p>
+  <p class="kx-caveat" id="cv-group26" hidden>This student group is published only for 2025–26, so earlier years and trends are blank.</p>
+
+  <!-- ===================== Our regions ===================== -->
+  <section class="kx-view" id="regions" data-view-panel="regions">
+    <div class="kx-sec-head">
+      <h2 class="kx-sec-title">% proficient in <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></h2>
+      <p class="kx-sec-note">Click a region to open its profile.</p>
+    </div>
+    <div class="kx-rcards">
+      <article class="kx-rcard" id="card-newark" data-region="newark" data-open-region="newark" tabindex="0" role="button" aria-label="Open the Newark profile">
+        <span class="kx-rtag">Newark</span>
+        <h3>KIPP Newark</h3>
+        <p class="kx-rsub">TEAM Academy Charter School</p>
+        <p class="kx-big" data-draw="r-val" data-source="regions">—</p>
+        <p class="kx-tile-n" data-draw="r-n" data-source="regions">—</p>
+        <dl class="kx-vs">
+          <div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="r-chg" data-source="regions">—</dd></div>
+          <div><dt>vs. Newark district schools</dt><dd data-draw="r-gap" data-vs="D" data-source="regions">—</dd></div>
+          <div><dt>vs. other Newark charters</dt><dd data-draw="r-gap" data-vs="C" data-source="regions entities">—</dd></div>
+          <div><dt>vs. New Jersey</dt><dd data-draw="r-gap" data-vs="S" data-source="regions">—</dd></div>
+        </dl>
+        <div class="kx-chart kx-spark" data-draw="r-spark" data-source="regions"></div>
+      </article>
+      <article class="kx-rcard" id="card-camden" data-region="camden" data-open-region="camden" tabindex="0" role="button" aria-label="Open the Camden profile">
+        <span class="kx-rtag">Camden</span>
+        <h3>KIPP Camden</h3>
+        <p class="kx-rsub">KIPP Cooper Norcross Academy, a Renaissance school</p>
+        <p class="kx-big" data-draw="r-val" data-source="regions">—</p>
+        <p class="kx-tile-n" data-draw="r-n" data-source="regions">—</p>
+        <dl class="kx-vs">
+          <div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="r-chg" data-source="regions">—</dd></div>
+          <div><dt>vs. Camden district schools</dt><dd data-draw="r-gap" data-vs="D" data-source="regions">—</dd></div>
+          <div><dt>vs. other Camden charters and Renaissance</dt><dd data-draw="r-gap" data-vs="C" data-source="regions entities">—</dd></div>
+          <div><dt>vs. New Jersey</dt><dd data-draw="r-gap" data-vs="S" data-source="regions">—</dd></div>
+        </dl>
+        <div class="kx-chart kx-spark" data-draw="r-spark" data-source="regions"></div>
+      </article>
+      <article class="kx-rcard" id="card-paterson" data-region="paterson" data-open-region="paterson" tabindex="0" role="button" aria-label="Open the Paterson profile">
+        <span class="kx-rtag">Paterson</span>
+        <h3>KIPP Paterson</h3>
+        <p class="kx-rsub">Paterson Prep Charter School, part of KIPP since 2025–26</p>
+        <p class="kx-big" data-draw="r-val" data-source="regions">—</p>
+        <p class="kx-tile-n" data-draw="r-n" data-source="regions">—</p>
+        <dl class="kx-vs">
+          <div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="r-chg" data-source="regions">—</dd></div>
+          <div><dt>vs. Paterson district schools</dt><dd data-draw="r-gap" data-vs="D" data-source="regions">—</dd></div>
+          <div><dt>vs. other Paterson charters</dt><dd data-draw="r-gap" data-vs="C" data-source="regions entities">—</dd></div>
+          <div><dt>vs. New Jersey</dt><dd data-draw="r-gap" data-vs="S" data-source="regions">—</dd></div>
+        </dl>
+        <div class="kx-chart kx-spark" data-draw="r-spark" data-source="regions"></div>
+      </article>
+    </div>
+    <p class="kx-foot">Each small chart is the gap to the state in points, 2022–2026: KIPP in indigo, district schools in orange, the state at the dashed line. Paterson Prep first tested in 2024 and joined KIPP for 2025–26, so its earlier points (hollow) are before KIPP.</p>
+
+    <div class="kx-grid two">
+      <article class="kx-card kx-span" id="r-trend-card">
+        <div class="kx-card-head">
+          <h3>Trend, 2022–2026: <span data-draw="subject-label">—</span>, <span data-draw="group-label">—</span></h3>
+          <div class="kx-tabs" role="group" aria-label="Trend measure">
+            <button type="button" data-trend="rate" aria-pressed="true">% proficient</button>
+            <button type="button" data-trend="gap" aria-pressed="false">Gap to state</button>
+          </div>
+        </div>
+        <p class="kx-note">Gap to state subtracts the New Jersey rate for the same subject, grades and student group each year, which takes the 2026 change of test out of the picture.</p>
+        <ul class="kx-legend">
+          <li><span class="kx-sw kx-sw-line sw-K"></span>KIPP</li>
+          <li><span class="kx-sw kx-sw-ring"></span>Before KIPP (Paterson)</li>
+          <li><span class="kx-sw kx-sw-line sw-D"></span>District schools</li>
+          <li><span class="kx-sw kx-sw-line sw-C"></span>Other charters in the city</li>
+          <li><span class="kx-sw kx-sw-dash"></span>New Jersey</li>
+        </ul>
+        <div class="kx-minis">
+          <div class="kx-mini" data-region="newark"><h4>Newark</h4><div class="kx-chart" data-draw="r-trend" data-source="regions entities"></div></div>
+          <div class="kx-mini" data-region="camden"><h4>Camden</h4><div class="kx-chart" data-draw="r-trend" data-source="regions entities"></div></div>
+          <div class="kx-mini" data-region="paterson"><h4>Paterson</h4><div class="kx-chart" data-draw="r-trend" data-source="regions entities"></div></div>
+        </div>
+      </article>
+
+      <article class="kx-card kx-span" id="r-groups-card">
+        <h3>By student group: <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span></h3>
+        <p class="kx-note">The bar is KIPP, the orange tick is the city's district schools and the dashed line is New Jersey, each for the same group. The last column is KIPP minus district schools.</p>
+        <div class="kx-minis">
+          <div class="kx-mini" data-region="newark"><h4>Newark</h4><div class="kx-rl is-mini" data-draw="r-groups" data-source="regions"></div></div>
+          <div class="kx-mini" data-region="camden"><h4>Camden</h4><div class="kx-rl is-mini" data-draw="r-groups" data-source="regions"></div></div>
+          <div class="kx-mini" data-region="paterson"><h4>Paterson</h4><div class="kx-rl is-mini" data-draw="r-groups" data-source="regions"></div></div>
+        </div>
+        <p class="kx-foot">◐ Some grades are hidden by the state for this group, so the rate covers only the grades published. A blank row means fewer than 10 students tested or no students in the group. In the 2026 files KIPP Paterson has no race or economic disadvantage data and Camden City district schools have almost no students marked economically disadvantaged.</p>
+      </article>
+
+      <article class="kx-card kx-span" id="r-grades-card">
+        <h3>By grade: <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></h3>
+        <p class="kx-note">The bar is KIPP, the orange tick is the city's district schools and the dashed line is New Jersey. Geometry and Algebra II are optional and taken by a self-selected group, so they appear here but are left out of pooled rates.</p>
+        <div class="kx-minis">
+          <div class="kx-mini" data-region="newark"><h4>Newark</h4><div class="kx-rl is-mini" data-draw="r-grades" data-source="regions"></div></div>
+          <div class="kx-mini" data-region="camden"><h4>Camden</h4><div class="kx-rl is-mini" data-draw="r-grades" data-source="regions"></div></div>
+          <div class="kx-mini" data-region="paterson"><h4>Paterson</h4><div class="kx-rl is-mini" data-draw="r-grades" data-source="regions"></div></div>
+        </div>
+      </article>
+
+      <article class="kx-card kx-span" id="r-cohort-card">
+        <div class="kx-card-head">
+          <h3>Follow a class: <span data-draw="subject-label">—</span>, <span data-draw="group-label">—</span></h3>
+          <div class="kx-field">
+            <select id="kx-cohort" class="kx-control kx-select" aria-label="Class to follow">
+              <option value="7">Grade 7 in 2026 (grade 3 in 2022)</option>
+              <option value="8">Grade 8 in 2026 (grade 4 in 2022)</option>
+              <option value="9">Grade 9 in 2026 (grade 5 in 2022), ELA</option>
+              <option value="6">Grade 6 in 2026 (grade 3 in 2023)</option>
+              <option value="5">Grade 5 in 2026 (grade 3 in 2024)</option>
+            </select>
+          </div>
+        </div>
+        <p class="kx-note">One class year followed up the grades, shown as its gap to the state for the same grade each year. A line that rises means the class gained ground on New Jersey. These are the students enrolled each spring, not a fixed roster: KIPP adds seats in some grades and students move.</p>
+        <ul class="kx-legend">
+          <li><span class="kx-sw kx-sw-line sw-K"></span>KIPP</li>
+          <li><span class="kx-sw kx-sw-line sw-D"></span>District schools</li>
+          <li><span class="kx-sw kx-sw-dash"></span>New Jersey</li>
+        </ul>
+        <div class="kx-minis">
+          <div class="kx-mini" data-region="newark"><h4>Newark</h4><div class="kx-chart" data-draw="r-cohort" data-source="regions"></div></div>
+          <div class="kx-mini" data-region="camden"><h4>Camden</h4><div class="kx-chart" data-draw="r-cohort" data-source="regions"></div></div>
+          <div class="kx-mini" data-region="paterson"><h4>Paterson</h4><div class="kx-chart" data-draw="r-cohort" data-source="regions"></div></div>
+        </div>
+      </article>
+
+      <article class="kx-card kx-span" id="r-levels-card">
+        <h3>Performance levels: <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></h3>
+        <p class="kx-note">Share of scores at each level, from lowest (left) to highest. The figure at the right is % proficient: the top two levels on ELA, Math and Science, and graduation ready on NJGPA.</p>
+        <ul class="kx-legend" data-draw="lv-legend"></ul>
+        <div class="kx-lv" data-draw="r-levels" data-source="regions"></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================== Region profile ===================== -->
+  <section class="kx-view" id="profile" data-view-panel="profile" hidden>
+    <div class="kx-entity">
+      <div>
+        <h2 data-draw="p-title">—</h2>
+        <div class="kx-badges" data-draw="p-badges" data-source="entities regions"></div>
+      </div>
+    </div>
+    <div class="kx-sec-head">
+      <h2 class="kx-sec-title">% proficient in <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></h2>
+    </div>
+    <div class="kx-tiles">
+      <article class="kx-tile" data-sector="K">
+        <h4><i class="sw-K"></i><span data-draw="p-kname">—</span></h4>
+        <p class="kx-big" data-draw="p-val" data-source="regions">—</p>
+        <p class="kx-tile-n" data-draw="p-n" data-source="regions">—</p>
+        <dl class="kx-vs"><div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="p-chg" data-source="regions">—</dd></div><div><dt>vs. district schools</dt><dd data-draw="p-gap" data-vs="D" data-source="regions">—</dd></div><div><dt>vs. New Jersey</dt><dd data-draw="p-gap" data-vs="S" data-source="regions">—</dd></div></dl>
+      </article>
+      <article class="kx-tile" data-sector="C">
+        <h4><i class="sw-C"></i>Other charters in the city</h4>
+        <p class="kx-big" data-draw="p-val" data-source="regions entities">—</p>
+        <p class="kx-tile-n" data-draw="p-n" data-source="regions entities">—</p>
+        <dl class="kx-vs"><div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="p-chg" data-source="regions entities">—</dd></div><div><dt>vs. district schools</dt><dd data-draw="p-gap" data-vs="D" data-source="regions entities">—</dd></div><div><dt>vs. New Jersey</dt><dd data-draw="p-gap" data-vs="S" data-source="regions entities">—</dd></div></dl>
+      </article>
+      <article class="kx-tile" data-sector="D">
+        <h4><i class="sw-D"></i>District schools</h4>
+        <p class="kx-big" data-draw="p-val" data-source="regions">—</p>
+        <p class="kx-tile-n" data-draw="p-n" data-source="regions">—</p>
+        <dl class="kx-vs"><div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="p-chg" data-source="regions">—</dd></div><div><dt>vs. New Jersey</dt><dd data-draw="p-gap" data-vs="S" data-source="regions">—</dd></div></dl>
+      </article>
+      <article class="kx-tile" data-sector="S">
+        <h4><i class="sw-S"></i>New Jersey</h4>
+        <p class="kx-big" data-draw="p-val" data-source="regions">—</p>
+        <p class="kx-tile-n" data-draw="p-n" data-source="regions">—</p>
+        <dl class="kx-vs"><div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="p-chg" data-source="regions">—</dd></div></dl>
+      </article>
+    </div>
+
+    <div class="kx-grid two">
+      <article class="kx-card kx-span" id="p-list-card">
+        <div class="kx-card-head">
+          <h3>Every charter and school: <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></h3>
+          <div class="kx-tabs" role="group" aria-label="Show as">
+            <button type="button" data-plist="bars" aria-pressed="true">Bars</button>
+            <button type="button" data-plist="heat" aria-pressed="false">Heat map</button>
+          </div>
+        </div>
+        <div class="kx-xbar">
+          <button type="button" class="kx-btn" id="p-schools-btn" data-pschools aria-pressed="false"><span class="kx-switch"></span>Show district schools</button>
+          <ul class="kx-legend" style="margin:0">
+            <li><span class="kx-sw sw-K"></span>KIPP</li>
+            <li><span class="kx-sw sw-C"></span>Charter or Renaissance</li>
+            <li><span class="kx-sw sw-SCH"></span>District school</li>
+            <li><span class="kx-sw kx-sw-tick" style="background:var(--c-prior)"></span>Prior year</li>
+            <li><span class="kx-sw kx-sw-dash"></span>New Jersey</li>
+          </ul>
+        </div>
+        <div class="kx-scroll" data-plist-box="plain"><div class="kx-rl" data-draw="p-list" data-with="plain" data-source="regions entities"></div></div>
+        <div class="kx-scroll" data-plist-box="schools" hidden><div class="kx-rl" data-draw="p-list" data-with="schools" data-source="regions entities region_schools"></div></div>
+        <p class="kx-foot">Averages first, then every charter and Renaissance LEA in the city sorted by rate. In the heat map each cell is that year's % proficient, shaded by how far it is above (indigo) or below (orange) New Jersey that year, and the last column is the change in that gap since the first year shown. Click a column name to sort. ◐ Some grades are hidden for this group. &lt;10 means fewer than 10 tested.</p>
+      </article>
+
+      <article class="kx-card" id="p-groups-card">
+        <h3>By student group: <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span></h3>
+        <p class="kx-note">The bar is KIPP, the orange tick district schools, the blue tick other charters in the city and the dashed line New Jersey, each for the same group. The last column is KIPP minus district schools.</p>
+        <div class="kx-rl is-mini" data-draw="p-groups" data-source="regions entities"></div>
+      </article>
+
+      <article class="kx-card" id="p-trend-card">
+        <div class="kx-card-head">
+          <h3>Trend, 2022–2026: <span data-draw="subject-label">—</span>, <span data-draw="group-label">—</span></h3>
+          <div class="kx-tabs" role="group" aria-label="Trend measure">
+            <button type="button" data-trend="rate" aria-pressed="true">% proficient</button>
+            <button type="button" data-trend="gap" aria-pressed="false">Gap to state</button>
+          </div>
+        </div>
+        <ul class="kx-legend" style="margin-top:10px">
+          <li><span class="kx-sw kx-sw-line sw-K"></span>KIPP</li>
+          <li><span class="kx-sw kx-sw-line sw-D"></span>District schools</li>
+          <li><span class="kx-sw kx-sw-line sw-C"></span>Other charters in the city</li>
+          <li><span class="kx-sw kx-sw-dash"></span>New Jersey</li>
+        </ul>
+        <div class="kx-chart is-tall" data-draw="p-trend" data-source="regions entities"></div>
+      </article>
+
+      <article class="kx-card" id="p-grades-card">
+        <h3>By grade: <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></h3>
+        <p class="kx-note">The bar is KIPP, the orange tick district schools, the blue tick other charters and the dashed line New Jersey.</p>
+        <div class="kx-rl is-mini" data-draw="p-grades" data-source="regions entities"></div>
+      </article>
+
+      <article class="kx-card" id="p-levels-card">
+        <h3>Performance levels: <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></h3>
+        <p class="kx-note">Share of scores at each level, lowest at the left. The figure at the right is % proficient.</p>
+        <ul class="kx-legend" data-draw="lv-legend"></ul>
+        <div class="kx-lv" data-draw="p-levels" data-source="regions entities"></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================== Statewide ===================== -->
+  <section class="kx-view" id="statewide" data-view-panel="statewide" hidden>
+    <div class="kx-sec-head">
+      <h2 class="kx-sec-title">New Jersey: % proficient in <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></h2>
+    </div>
+    <div class="kx-tiles">
+      <article class="kx-tile" data-sector="S">
+        <h4><i class="sw-S"></i>New Jersey</h4>
+        <p class="kx-big" data-draw="s-val" data-source="regions">—</p>
+        <p class="kx-tile-n" data-draw="s-n" data-source="regions">—</p>
+        <dl class="kx-vs"><div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="s-chg" data-source="regions">—</dd></div></dl>
+      </article>
+      <article class="kx-tile" data-sector="KN">
+        <h4><i class="sw-K"></i>KIPP New Jersey, all three regions</h4>
+        <p class="kx-big" data-draw="s-val" data-source="regions">—</p>
+        <p class="kx-tile-n" data-draw="s-n" data-source="regions">—</p>
+        <dl class="kx-vs"><div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="s-chg" data-source="regions">—</dd></div><div><dt>vs. New Jersey</dt><dd data-draw="s-gap" data-source="regions">—</dd></div></dl>
+      </article>
+      <article class="kx-tile" data-sector="HD">
+        <h4><i class="sw-D"></i>Newark, Camden and Paterson district schools</h4>
+        <p class="kx-big" data-draw="s-val" data-source="regions">—</p>
+        <p class="kx-tile-n" data-draw="s-n" data-source="regions">—</p>
+        <dl class="kx-vs"><div><dt>vs. <span data-draw="prior-label">—</span></dt><dd data-draw="s-chg" data-source="regions">—</dd></div><div><dt>vs. New Jersey</dt><dd data-draw="s-gap" data-source="regions">—</dd></div></dl>
+      </article>
+    </div>
+
+    <div class="kx-grid two">
+      <article class="kx-card kx-span" id="s-list-card">
+        <div class="kx-card-head">
+          <h3><span data-draw="s-list-title">—</span>: <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span> · <span data-draw="group-label">—</span></h3>
+          <div class="kx-tabs" role="group" aria-label="Show as">
+            <button type="button" data-smode="bars" aria-pressed="true">Bars</button>
+            <button type="button" data-smode="heat" aria-pressed="false">Heat map</button>
+          </div>
+        </div>
+        <div class="kx-xbar">
+          <div class="kx-tabs" role="group" aria-label="Which rows">
+            <button type="button" data-slevel="lea" aria-pressed="true">Districts and charters</button>
+            <button type="button" data-slevel="charter" aria-pressed="false">Charters only</button>
+            <button type="button" data-slevel="school" aria-pressed="false">Schools</button>
+          </div>
+          <select id="kx-county" class="kx-control kx-select kx-search" style="width:auto" aria-label="County">
+            <option value="">All counties</option>
+            <option>Atlantic</option><option>Bergen</option><option>Burlington</option><option>Camden</option><option>Cape May</option><option>Cumberland</option><option>Essex</option><option>Gloucester</option><option>Hudson</option><option>Hunterdon</option><option>Mercer</option><option>Middlesex</option><option>Monmouth</option><option>Morris</option><option>Ocean</option><option>Passaic</option><option>Salem</option><option>Somerset</option><option>Sussex</option><option>Union</option><option>Warren</option>
+          </select>
+          <input type="search" id="kx-search" class="kx-control kx-search" placeholder="Search by name or city" aria-label="Search by name or city" autocomplete="off">
+        </div>
+        <p class="kx-caveat" id="cv-schoolgroup" hidden>Statewide school rows are loaded for all students, economically disadvantaged, Black &amp; Latino, African American, Hispanic, White, Asian, students with disabilities and multilingual learners. Pick one of those, or switch to Districts and charters for the other groups.</p>
+        <div class="kx-scroll" data-spick="lea-core"><div class="kx-rl is-wide" data-draw="s-list" data-source="entities leas_core"></div></div>
+        <div class="kx-scroll" data-spick="lea-groups" hidden><div class="kx-rl is-wide" data-draw="s-list" data-source="entities leas_core leas_groups"></div></div>
+        <div class="kx-scroll" data-spick="school-core" hidden><div class="kx-rl is-wide" data-draw="s-list" data-source="entities schools_core"></div></div>
+        <div class="kx-scroll" data-spick="school-groups" hidden><div class="kx-rl is-wide" data-draw="s-list" data-source="entities schools_core schools_groups"></div></div>
+        <div class="kx-more"><span data-draw="s-count">—</span><button type="button" class="kx-btn" id="s-more-btn">Show 200 more</button></div>
+        <p class="kx-foot">KIPP rows and their host districts are pinned at the top, then every row ranked by rate. Rows with fewer than 20 tested are left out of the ranking. The bar is % proficient, the gray tick the prior year and the dashed line New Jersey. A charter LEA reports as one school, so in Schools each charter is one row. Click a column name to sort.</p>
+      </article>
+
+      <article class="kx-card kx-span" id="s-scatter-card">
+        <h3>Results against economic disadvantage: <span data-draw="subject-label">—</span>, <span data-draw="year-label">—</span></h3>
+        <p class="kx-note">Each dot is one <span data-draw="s-unit">—</span>. Across is the share of its tested students who are economically disadvantaged (ELA and Math, the middle value of the years 2022–2026), up is % proficient for <span data-draw="group-label-lc">—</span>. The dashed line is the statewide pattern, so a dot above the line scores higher than places with similar poverty.</p>
+        <ul class="kx-legend">
+          <li><span class="kx-sw sw-K" style="border-radius:50%"></span>KIPP</li>
+          <li><span class="kx-sw sw-D" style="border-radius:50%"></span>Newark, Camden, Paterson district</li>
+          <li><span class="kx-sw sw-C" style="border-radius:50%"></span>Other charters</li>
+          <li><span class="kx-sw sw-SCH" style="border-radius:50%"></span>Everyone else</li>
+        </ul>
+        <div class="kx-chart is-tall" data-spick="lea-core lea-groups" data-draw="s-scatter" data-source="entities leas_core"></div>
+        <div class="kx-chart is-tall" data-spick="school-core school-groups" data-draw="s-scatter" data-source="entities schools_core" hidden></div>
+        <p class="kx-foot" data-draw="s-scatter-foot">—</p>
+      </article>
+
+      <article class="kx-card kx-span" id="s-standing-card">
+        <h3>Statewide standing, 2022–2026: <span data-draw="subject-label">—</span>, <span data-draw="group-label">—</span></h3>
+        <p class="kx-note">Percentile among all New Jersey districts and charters with at least 20 tested: 50 is the middle of the state, 100 the top. Rank does not depend on which test was given, so it reads cleanly across the 2026 change.</p>
+        <div class="kx-table-wrap">
+          <table class="kx-table" data-spick="lea-core school-core" data-draw="s-standing" data-source="entities leas_core"></table>
+          <table class="kx-table" data-spick="lea-groups school-groups" data-draw="s-standing" data-source="entities leas_core leas_groups" hidden></table>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <details class="kx-about" id="about">
+    <summary>About these figures</summary>
+    <ul>
+      <li><b>Source:</b> the New Jersey Department of Education's statewide assessment data files for spring 2022 through spring 2026 (105 workbooks: every NJSLA ELA, Math and Science test and both NJGPA tests, each year), downloaded November 13, 2026 from <a href="https://www.nj.gov/education/assessment/results/reports/" target="_blank" rel="noopener">nj.gov/education/assessment/results/reports</a>. Nothing here comes from KIPP's own systems.</li>
+      <li><b>% proficient</b> is the share of valid scores at Level 4 or 5 on ELA and Math, Level 3 or 4 on Science, and Graduation Ready on NJGPA.</li>
+      <li><b>KIPP Newark</b> is TEAM Academy Charter School, <b>KIPP Camden</b> is KIPP Cooper Norcross Academy (a Renaissance school LEA) and <b>KIPP Paterson</b> is Paterson Prep Charter School, which first tested in 2024 and joined KIPP for 2025–26. The state reports each as one LEA, so results cannot be split by campus here.</li>
+      <li><b>District schools</b> are the traditional district's own results. Charters and Renaissance schools are separate LEAs and are not in them.</li>
+      <li><b>Other charters in the city</b> adds up every other charter and Renaissance LEA assigned to that city. A charter is assigned to the district that sends it the most students, using the assignments in the NJ Charter Sector Explorer.</li>
+      <li><b>Grades:</b> pick a range or any mix. The page adds up scores and proficient scores across the tests picked. All grades pools ELA grades 3–9, Math grades 3–8 plus Algebra I, and Science grades 5, 8 and 11. Geometry and Algebra II appear only as grade rows.</li>
+      <li><b>Suppression:</b> the state hides any group with fewer than 10 students, and sometimes hides a count while publishing the rate. Hidden results are never filled in, so a pooled rate covers only the published grades and is marked ◐ when some are missing.</li>
+      <li><b>Black &amp; Latino</b> adds African American and Hispanic students where the state publishes both. Group names changed over the years (for example English Language Learners became Multilingual Learners) and are matched up here.</li>
+      <li><b>2026</b> ELA, Math and NJGPA results come from the new adaptive NJSLA-A and NJGPA-A, with new score scales. Science did not change. The NJGPA passing score was also lowered after 2022.</li>
+      <li><b>Gaps in the 2026 files:</b> the state lists every KIPP Paterson student's race as "declined to report" and none as economically disadvantaged, and lists almost no Camden City district students as economically disadvantaged (0.5%, after 85% in 2025). About ten other LEAs show similar one-year swings. Results for those groups in 2026 are blank or unreliable for those LEAs.</li>
+      <li><b>Economic disadvantage</b> in the scatter is economically disadvantaged tested students divided by all tested students across every ELA and Math test, taking the middle value of the years 2022–2026 so that a single misreported year does not move a dot. It is not an enrollment figure. A place is left out where the state hides the counts, which includes KIPP Paterson.</li>
+    </ul>
+  </details>
+</div>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
